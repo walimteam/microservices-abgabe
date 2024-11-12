@@ -1,4 +1,4 @@
-// Skeleton eines simulationsprogramm um Testdaten zu erzeugen
+// Skeleton eines simulationsprogramm um Testdaten zu erzeuge
 //   das simulationsprogramm soll erweitert werden, um alle Daten die in der Aufgabenstellung
 //   beschrieben sind zu erzeugen und zu senden
 // change history
@@ -14,7 +14,24 @@ app.use(express.json());
 
 // add mqtt support
 var mqtt    = require('mqtt');
-var client  = mqtt.connect('mqtt://broker.hivemq.com');
+var client = mqtt.connect('mqtt://localhost:1883');
+
+client.on('connect', () => {
+  console.log('Simulation: Verbindung erfolgreich hergestellt');
+});
+
+client.on('reconnect', () => {
+  console.log('Simulation: Versuche, erneut zu verbinden');
+});
+
+client.on('close', () => {
+  console.log('Simulation: Verbindung geschlossen');
+});
+
+client.on('error', (err) => {
+  console.error('Simulation: Fehler bei der Verbindung:', err);
+});
+
 
 const axios = require('axios');
 
@@ -32,7 +49,7 @@ if (args[0] == '?') {
   console.log('arg0 = timeinterval in dem die Daten gesendet werden in sec');
   console.log('arg1 = unique id of drone - 6 stellig');
   console.log('arg2 = Anzahl der Daten in Zyklen - 2stellig');
-  console.log('arg3 = identifier type of messaurement - gpsd= gps data, diss=Distanz seit Start, disp=Distanz seit Warenaufnahme, battl=Ladezustand Batterie, ...');
+  console.log('arg3 = identifier type of messaurement - gpsd= gps data, diss=Distanz seit Start, disp=Distanz seit Warenaufnahme, battl=Ladezustand Batterie, time=Zeit seit Warenaufnahme, delivered=Zustellung erfolgt');
   console.log('arg4 = start value');
   console.log('arg5 = end value');
   console.log('bsp =npm start 10 dhbw-1 5 gpsd 48.6 8.6');
@@ -52,7 +69,7 @@ if ((args.length) == 6) {
     console.log('arg0 = timeinterval in dem die Daten gesendet werden in sec');
     console.log('arg1 = unique id of drone - 6 stellig');
     console.log('arg2 = Anzahl der Daten in Zyklen - 2stellig');
-    console.log('arg3 = identifier type of messaurement - gpsd= gps data, diss=Distanz seit Start, disp=Distanz seit Warenaufnahme, battl=Ladezustand Batterie, ...');
+    console.log('arg3 = identifier type of messaurement - gpsd= gps data, diss=Distanz seit Start, disp=Distanz seit Warenaufnahme, battl=Ladezustand Batterie, time=Zeit seit Warenaufnahme, delivered=Zustellung erfolgt');
     console.log('arg4 = start value');
     console.log('arg5 = end value');
     console.log('bsp =npm start 10 dhbw-1 5 gpsd 48.6 8.6');
@@ -71,6 +88,7 @@ function intervalFunc() {
   if (i == simanzahl-1) {
     clearInterval(this);
   }
+  console.log('value =', value);
   // sende Daten
 
   mqttmsg['timestamp'] = new Date().toISOString();
@@ -86,36 +104,73 @@ function intervalFunc() {
     } 
     // sending gps data
     // min value = gps longtitude, max value = gps latitude
-    console.log('value=',value);
     mqttmsg['gpslatitude'] = gpslatitude+value;
     mqttmsg['gpslongitude'] = gpslongitude+value;
     mqttopic= 'SWS/'+locid+'/G';
-    console.log('mqtt msg',JSON.stringify(mqttmsg));
     value= value + 0.1;
-    console.log('value=',value);
   }
-  // handle ladezustand batterie data
+  //km seit Start
   if (datatype == 'diss') {
-    // beim ersten Schleifendurchlauf werden die Anfangswerte von den Aufrufparametern geladen
-    if (i == 0) { 
+    if (i == 0) {
       min,value = args[4];
       max = args[5];
     } 
     
-    // variation in den Werten
     if (value >= max)
       value = max; 
     else
       value = min + (i/10);
-   
-    
-    // handle mqtt topic
-    //mqttopic= ...
-    
-    // handle mqtt daten
-    //mqttmsg...  
-    
+
+    value = Math.min(value, max);
+    mqttmsg['km_since_start'] = value;
+    mqttopic = 'SWS/' + locid + '/D';
+    value += 0.1;
+
   }
+  //km seit Warenaufnahme
+  if(datatype == 'disp') {
+    if (i == 0) {
+      min = parseFloat(args[4]);
+      max = parseFloat(args[5]);
+      value = min;
+    }
+    value = Math.min(value, max);
+    mqttmsg['km_since_pickup'] = value;
+    mqttopic = 'SWS/' + locid + '/P';
+    value += 0.1;
+  }
+
+  //Zeit seit Warenaufnahme
+  if(datatype == 'time') {
+    if (i == 0) {
+      min = parseFloat(args[4]);
+      max = parseFloat(args[5]);
+      value = min;
+    }
+    value = Math.min(value, max);
+    mqttmsg['time_since_pickup'] = value;
+    mqttopic = 'SWS/' + locid + '/T';
+    value += 1;
+  }
+
+  // Delivered
+    if(datatype == 'delivered') {
+      if(i == 0) {
+        min = parseFloat(args[4]);
+        max = parseFloat(args[5]);
+        value = min;
+      }
+      if (value >= max){
+        mqttmsg['delivered'] = true;
+      }
+        else {
+            mqttmsg['delivered'] = false;
+        }
+      value += 1;
+      mqttopic = 'SWS/' + locid + '/L';
+    }
+
+  // Ladestand Batterie
   if (datatype == 'batt') {
     // beim ersten Schleifendurchlauf werden die Anfangswerte von den Aufrufparametern geladen
     if (i == 0) { 
@@ -128,22 +183,19 @@ function intervalFunc() {
       value = max; 
     else
       value = min + (i/10);
-   
-    
-    // handle mqtt topic
-    //mqttopic= ...
-    
-    // handle mqtt daten
-    //mqttmsg...    
+    value = Math.min(value, max);
+    mqttmsg['battery_level'] = value;
+    mqttopic = 'SWS/' + locid + '/B';
+    value += 1;
   }
-    
+  console.log('value =', value);
   console.log('mqttopic =', mqttopic); 
   console.log('mqtt msg',JSON.stringify(mqttmsg));
   client.publish(mqttopic,  JSON.stringify(mqttmsg));
   i++;
 }
 app.listen(4000, () =>{
-  myinterval = setInterval(intervalFunc, 10000);
+  myinterval = setInterval(intervalFunc, timeinterval * 1000);
 
   console.log('Listening on port 4000')
 })
