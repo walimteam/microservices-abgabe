@@ -10,16 +10,41 @@ services:
     networks:
       - mqtt-network
 
-  receiver-app:
-    build:
-      context: ./rec_controller
-    container_name: receiver-app
-    depends_on:
-      - mqtt-broker
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    ports:
+      - "27017:27017"
     networks:
       - mqtt-network
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    volumes:
+      - mongodb_data:/data/db
 
+  rec_controller:
+    build:
+      context: ./rec_controller
+    container_name: rec_controller
+    depends_on:
+      - mqtt-broker
+      - mongodb
+    networks:
+      - mqtt-network
+    env_file:
+      - ./rec_controller/.env
+
+  batt_alert:
+    build:
+        context: ./batt_alert
+    container_name: batt_alert
+    networks:
+        - mqtt-network
 
 networks:
   mqtt-network:
     driver: bridge
+
+volumes:
+    mongodb_data:

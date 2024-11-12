@@ -69,7 +69,7 @@ if ((args.length) == 6) {
     console.log('arg0 = timeinterval in dem die Daten gesendet werden in sec');
     console.log('arg1 = unique id of drone - 6 stellig');
     console.log('arg2 = Anzahl der Daten in Zyklen - 2stellig');
-    console.log('arg3 = identifier type of messaurement - gpsd= gps data, diss=Distanz seit Start, disp=Distanz seit Warenaufnahme, battl=Ladezustand Batterie, time=Zeit seit Warenaufnahme, delivered=Zustellung erfolgt');
+    console.log('arg3 = identifier type of messaurement - gpsd= gps data, diss=Distanz seit Start, disp=Distanz seit Warenaufnahme, batt=Ladezustand Batterie, time=Zeit seit Warenaufnahme, delivered=Zustellung erfolgt');
     console.log('arg4 = start value');
     console.log('arg5 = end value');
     console.log('bsp =npm start 10 dhbw-1 5 gpsd 48.6 8.6');
@@ -84,8 +84,8 @@ var myinterval;
 console.log('min', min);
 
 function intervalFunc() {
-  
-  if (i == simanzahl-1) {
+
+  if (i == simanzahl - 1) {
     clearInterval(this);
   }
   console.log('value =', value);
@@ -93,33 +93,33 @@ function intervalFunc() {
 
   mqttmsg['timestamp'] = new Date().toISOString();
   mqttmsg['locid'] = locid;
-  console.log('datatype = ',datatype);
+  console.log('datatype = ', datatype);
   // handle GPS Data
   if (datatype == 'gpsd') {
-    if (i == 0) { 
-      console.log('i=',i);
+    if (i == 0) {
+      console.log('i=', i);
       gpslatitude = parseFloat(args[4]);
       gpslongitude = parseFloat(args[5]);
       value = 0;
-    } 
+    }
     // sending gps data
     // min value = gps longtitude, max value = gps latitude
-    mqttmsg['gpslatitude'] = gpslatitude+value;
-    mqttmsg['gpslongitude'] = gpslongitude+value;
-    mqttopic= 'SWS/'+locid+'/G';
-    value= value + 0.1;
+    mqttmsg['gpslatitude'] = gpslatitude + value;
+    mqttmsg['gpslongitude'] = gpslongitude + value;
+    mqttopic = 'SWS/' + locid + '/G';
+    value = value + 0.1;
   }
   //km seit Start
   if (datatype == 'diss') {
     if (i == 0) {
-      min,value = args[4];
+      min, value = args[4];
       max = args[5];
-    } 
-    
+    }
+
     if (value >= max)
-      value = max; 
+      value = max;
     else
-      value = min + (i/10);
+      value = min + (i / 10);
 
     value = Math.min(value, max);
     mqttmsg['km_since_start'] = value;
@@ -128,7 +128,7 @@ function intervalFunc() {
 
   }
   //km seit Warenaufnahme
-  if(datatype == 'disp') {
+  if (datatype == 'disp') {
     if (i == 0) {
       min = parseFloat(args[4]);
       max = parseFloat(args[5]);
@@ -141,7 +141,7 @@ function intervalFunc() {
   }
 
   //Zeit seit Warenaufnahme
-  if(datatype == 'time') {
+  if (datatype == 'time') {
     if (i == 0) {
       min = parseFloat(args[4]);
       max = parseFloat(args[5]);
@@ -154,49 +154,49 @@ function intervalFunc() {
   }
 
   // Delivered
-    if(datatype == 'delivered') {
-      if(i == 0) {
-        min = parseFloat(args[4]);
-        max = parseFloat(args[5]);
-        value = min;
-      }
-      if (value >= max){
-        mqttmsg['delivered'] = true;
-      }
-        else {
-            mqttmsg['delivered'] = false;
-        }
-      value += 1;
-      mqttopic = 'SWS/' + locid + '/L';
+  if (datatype == 'delivered') {
+    if (i == 0) {
+      min = parseFloat(args[4]);
+      max = parseFloat(args[5]);
+      value = min;
     }
+    if (value >= max) {
+      mqttmsg['delivered'] = true;
+    } else {
+      mqttmsg['delivered'] = false;
+    }
+    value += 1;
+    mqttopic = 'SWS/' + locid + '/L';
+  }
 
   // Ladestand Batterie
   if (datatype == 'batt') {
     // beim ersten Schleifendurchlauf werden die Anfangswerte von den Aufrufparametern geladen
-    if (i == 0) { 
-      min,value = args[4];
-      max = args[5];
-    } 
-    
+    if (i == 0) {
+      max = parseFloat(args[4]);
+      min = parseFloat(args[5]);
+      value = max;
+    }
+
     // variation in den Werten
-    if (value >= max)
-      value = max; 
-    else
-      value = min + (i/10);
-    value = Math.min(value, max);
+    if (value <= min) {
+      value = min;
+    } else {
+      value -= 1;
+    }
+    value = Math.max(value, min);
     mqttmsg['battery_level'] = value;
     mqttopic = 'SWS/' + locid + '/B';
-    value += 1;
   }
-  console.log('value =', value);
-  console.log('mqttopic =', mqttopic); 
-  console.log('mqtt msg',JSON.stringify(mqttmsg));
-  client.publish(mqttopic,  JSON.stringify(mqttmsg));
-  i++;
+    console.log('value =', value);
+    console.log('mqttopic =', mqttopic);
+    console.log('mqtt msg', JSON.stringify(mqttmsg));
+    client.publish(mqttopic, JSON.stringify(mqttmsg));
+    i++;
+
 }
 app.listen(4000, () =>{
   myinterval = setInterval(intervalFunc, timeinterval * 1000);
 
   console.log('Listening on port 4000')
-})
-;
+});
