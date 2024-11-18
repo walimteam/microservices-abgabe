@@ -1,5 +1,4 @@
-Was genau ist mit sollen durch das mongoCLI verfiziert werden können gemeint bei Aufgabe 7?
-
-Soll jede Aufgabe einzeln hochgeladen werden oder alle zusammen in einem Archiv?
-Bzw muss der Fortschritt jeder Aufgabe einzeln hochgeladen sein oder reicht das Endprodukt?
-
+Connect to Mongo CLI:
+    docker exec -it mongodb bash
+    mongosh -u root -p example --authenticationDatabase admin
+    use rec_data

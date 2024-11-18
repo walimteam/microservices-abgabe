@@ -49,7 +49,7 @@ if (args[0] == '?') {
   console.log('arg0 = timeinterval in dem die Daten gesendet werden in sec');
   console.log('arg1 = unique id of drone - 6 stellig');
   console.log('arg2 = Anzahl der Daten in Zyklen - 2stellig');
-  console.log('arg3 = identifier type of messaurement - gpsd= gps data, diss=Distanz seit Start, disp=Distanz seit Warenaufnahme, battl=Ladezustand Batterie, time=Zeit seit Warenaufnahme, delivered=Zustellung erfolgt');
+  console.log('arg3 = identifier type of messaurement - gpsd= gps data, diss=Distanz seit Start, disp=Distanz seit Warenaufnahme, batt=Ladezustand Batterie, time=Zeit seit Warenaufnahme, delivered=Zustellung erfolgt');
   console.log('arg4 = start value');
   console.log('arg5 = end value');
   console.log('bsp =npm start 10 dhbw-1 5 gpsd 48.6 8.6');
@@ -150,7 +150,7 @@ function intervalFunc() {
     value = Math.min(value, max);
     mqttmsg['time_since_pickup'] = value;
     mqttopic = 'SWS/' + locid + '/T';
-    value += 1;
+    value += timeinterval / 60;
   }
 
   // Delivered
@@ -182,7 +182,7 @@ function intervalFunc() {
     if (value <= min) {
       value = min;
     } else {
-      value -= 1;
+      value -= (i/10);
     }
     value = Math.max(value, min);
     mqttmsg['battery_level'] = value;
