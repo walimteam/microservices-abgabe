@@ -1,20 +1,3 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: rec-controller-config
-data:
-  MQTT_BROKER: mqtt-service
-  NODE_ENV: production
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: mongo-secret
-type: Opaque
-data:
-  MONGO_USER: cm9vdA==   # "root" base64 encoded
-  MONGO_PASS: ZXhhbXBsZQ==  # "example" base64 encoded
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -33,16 +16,13 @@ spec:
     spec:
       containers:
         - name: rec-controller
-          image: rec-controller:latest
-          ports:
-            - containerPort: 3000
-          envFrom:
-            - configMapRef:
-                name: mongodb-config
-            - configMapRef:
-                name: rec-controller-config
-            - secretRef:
-                name: mongo-secret
+          image: microservices-abgabe-rec_controller:latest
+          imagePullPolicy: Never
+          env:
+            - name: MQTT_BROKER
+              value: mqtt-broker-service
+            - name: NODE_ENV
+              value: production
           resources:
             limits:
               memory: "128Mi"
@@ -51,30 +31,10 @@ spec:
               memory: "64Mi"
               cpu: "50m"
           livenessProbe:
-            httpGet:
-              path: /health
-              port: 3000
-            initialDelaySeconds: 10
+            exec:
+              command:
+                - sh
+                - -c
+                - "ps aux | grep '[n]ode'"
+            initialDelaySeconds: 15
             periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 3000
-            initialDelaySeconds: 5
-            periodSeconds: 5
-      volumes:
-        - name: node-modules
-          emptyDir: {}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: rec-controller
-spec:
-  selector:
-    app: rec-controller
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 3000
-  type: ClusterIP

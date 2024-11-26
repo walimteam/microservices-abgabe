@@ -15,6 +15,7 @@ app.use(express.json());
 // add mqtt support
 var mqtt    = require('mqtt');
 var client = mqtt.connect('mqtt://localhost:1883');
+//var client = mqtt.connect('mqtt://192.168.65.3:30083');
 
 client.on('connect', () => {
   console.log('Simulation: Verbindung erfolgreich hergestellt');
@@ -191,6 +192,10 @@ function intervalFunc() {
     console.log('value =', value);
     console.log('mqttopic =', mqttopic);
     console.log('mqtt msg', JSON.stringify(mqttmsg));
+    if(!client.connected){
+        console.log('MQTT not connected');
+        return;
+    }
     client.publish(mqttopic, JSON.stringify(mqttmsg));
     i++;
 

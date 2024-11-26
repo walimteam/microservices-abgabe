@@ -27,6 +27,7 @@ mongoose.connect(dbUrl, {
     console.error('Fehler bei der Verbindung zu MongoDB:', err);
 });
 
+
 const vehicleSchema = new mongoose.Schema({
     timestamp: String,
     locid: String,

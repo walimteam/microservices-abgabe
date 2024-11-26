@@ -10,3 +10,7 @@ docker-compose logs -f batt_alert
 Notes for kubernetes:
 persistent volume
 
+kubectl apply -f mqtt.yaml
+kubectl apply -f mongodb.yaml
+kubectl apply -f mongodb-config.yaml
+kubectl apply -f rec_controller.yaml
