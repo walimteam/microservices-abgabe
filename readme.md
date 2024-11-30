@@ -13,4 +13,5 @@ persistent volume
 kubectl apply -f mqtt.yaml
 kubectl apply -f mongodb.yaml
 kubectl apply -f mongodb-config.yaml
+kubectl apply -f mongodb-pv.yaml
 kubectl apply -f rec_controller.yaml

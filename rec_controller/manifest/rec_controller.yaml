@@ -20,7 +20,7 @@ spec:
           imagePullPolicy: Never
           env:
             - name: MQTT_BROKER
-              value: mqtt-broker-service
+              value: mqtt-broker
             - name: NODE_ENV
               value: production
             - name: MONGO_USER

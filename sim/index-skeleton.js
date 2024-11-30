@@ -12,9 +12,9 @@ app.use(cors());
 // required to handle the request body
 app.use(express.json());
 
-// add mqtt support
 var mqtt    = require('mqtt');
 var client = mqtt.connect('mqtt://localhost:1883');
+//var client = mqtt.connect('mqtt://mqtt-broker:1883');
 //var client = mqtt.connect('mqtt://192.168.65.3:30083');
 
 client.on('connect', () => {
